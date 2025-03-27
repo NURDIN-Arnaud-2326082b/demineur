@@ -70,9 +70,54 @@ export const THEMES: MinesweeperTheme[] = [
     lightBorderColor: '#FFB6C1', // Rose clair
     darkBorderColor: '#E66A8A', // Rose moyen
   },
+  // Nouveaux thèmes
+  {
+    id: 'purple',
+    name: 'Violet',
+    cellColor: '#9370DB', // Violet moyen
+    revealedColor: '#4B0082', // Indigo
+    borderColor: '#8A2BE2', // Bleu-violet
+    headerColor: '#483D8B', // Bleu ardoise foncé
+    textColor: '#FFFFFF', // Blanc
+    lightBorderColor: '#B19CD9', // Violet clair
+    darkBorderColor: '#6A5ACD', // Bleu ardoise
+  },
+  {
+    id: 'red',
+    name: 'Rouge',
+    cellColor: '#E74C3C', // Rouge vif
+    revealedColor: '#922B21', // Rouge foncé
+    borderColor: '#C0392B', // Rouge brique
+    headerColor: '#7B241C', // Rouge très foncé
+    textColor: '#FFFFFF', // Blanc
+    lightBorderColor: '#F1948A', // Rouge clair
+    darkBorderColor: '#B03A2E', // Rouge moyen
+  },
+  {
+    id: 'white',
+    name: 'Blanc',
+    cellColor: '#FFFFFF', // Blanc pur
+    revealedColor: '#F5F5F5', // Blanc cassé pour les cases révélées
+    borderColor: '#E0E0E0', // Gris très clair pour les bordures
+    headerColor: '#F8F9FA', // Blanc légèrement grisé pour l'en-tête
+    textColor: '#333333', // Texte gris foncé pour contraste
+    lightBorderColor: '#F0F0F0', // Blanc grisé clair
+    darkBorderColor: '#CCCCCC', // Gris clair
+  },
+  {
+    id: 'yellow',
+    name: 'Jaune',
+    cellColor: '#F1C40F', // Jaune vif
+    revealedColor: '#B7950B', // Jaune foncé
+    borderColor: '#D4AC0D', // Or
+    headerColor: '#9A7D0A', // Jaune brun
+    textColor: '#000000', // Noir (pour contraste)
+    lightBorderColor: '#F7DC6F', // Jaune clair
+    darkBorderColor: '#B9770E', // Brun doré
+  },
 ];
 
-// Couleurs de base
+// Couleurs de bas
 export const colors = {
   // Couleurs des cellules
   cellBackground: '#FFA500',      // Orange pour cases non révélées
@@ -112,6 +157,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.headerBackground,
     width: '100%',
+    minWidth: 320, // Garantit une largeur minimum pour l'en-tête
   },
   counterContainer: {
     minWidth: 80,
@@ -234,6 +280,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
     marginBottom: 10,
+    minWidth: 320, // Assure une largeur minimum pour les boutons
   },
   difficultyButton: {
     backgroundColor: '#444',

@@ -26,12 +26,14 @@ const isPC = screenWidth >= 768;
 
 // Taille fixe pour les cellules, quel que soit le niveau de difficulté
 const FIXED_CELL_SIZE = 35;
+const MEDIUM_COLS = 16; // Norme de référence (colonnes du mode moyen)
+const STANDARD_BOARD_WIDTH = MEDIUM_COLS * FIXED_CELL_SIZE; // Largeur standard pour toutes les difficultés
 
 // Définition des difficultés (sans scale car nous utilisons une taille fixe)
 const DIFFICULTIES: Record<string, Difficulty> = {
   easy: { rows: 9, cols: 9, mines: 10, name: 'Facile' },
   medium: { rows: 16, cols: 16, mines: 40, name: 'Moyen' },
-  hard: { rows: 16, cols: 30, mines: 99, name: 'Difficile' },
+  hard: { rows: 30, cols: 16, mines: 99, name: 'Difficile' }, // Orienté verticalement: 30 lignes et 16 colonnes
 };
 
 export default function MinesweeperBoard({
@@ -65,17 +67,26 @@ export default function MinesweeperBoard({
   const scrollViewRef = useRef<ScrollView>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Taille fixe pour les cellules
-  const cellSize = FIXED_CELL_SIZE;
+  // Calculer la taille des cellules pour maintenir la même largeur de plateau quel que soit le mode
+  const getAdjustedCellSize = () => {
+    // Pour le mode facile, nous ajustons les cellules pour qu'elles remplissent la même largeur que le mode moyen
+    if (difficulty === 'easy') {
+      // Calcul pour que la grille 9x9 ait la même largeur que la grille 16x16
+      return STANDARD_BOARD_WIDTH / cols;
+    } else {
+      return FIXED_CELL_SIZE;
+    }
+  };
+
+  // Taille des cellules, adaptée pour maintenir une largeur de grille constante
+  const cellSize = getAdjustedCellSize();
   
   // Calculer la taille totale du plateau
-  const boardWidth = cols * cellSize;
+  const boardWidth = difficulty === 'easy' ? STANDARD_BOARD_WIDTH : cols * cellSize;
   const boardHeight = rows * cellSize;
   
-  // Déterminer l'orientation du conteneur en fonction du dispositif
-  // PC: horizontal (container plus large), Mobile: vertical (container plus haut)
-  const CONTAINER_WIDTH = isPC ? Math.min(screenWidth * 0.8, 1200) : Math.min(screenWidth - 40, 350);
-  const CONTAINER_HEIGHT = isPC ? Math.min(screenHeight * 0.6, 500) : Math.min(screenHeight * 0.6, 600);
+  // Largeur fixe pour le conteneur de jeu, basée sur la largeur standard
+  const CONTAINER_WIDTH = isPC ? Math.min(STANDARD_BOARD_WIDTH + 20, screenWidth * 0.8) : Math.min(STANDARD_BOARD_WIDTH, screenWidth - 40);
 
   useEffect(() => {
     setIsInitializing(true);
@@ -178,8 +189,9 @@ export default function MinesweeperBoard({
       >
         <View style={styles.themeCirclesContainer}>
           {THEMES.map((theme, index) => {
-            // Calculer un délai d'apparition pour chaque cercle
-            const delay = index * 100;
+            // Calculer un délai proportionnel mais limité à 0.95 pour éviter le problème d'interpolation
+            const opacityDelay = Math.min(0.2 + (index * 0.1), 0.95);
+            const scaleDelay = Math.min(0.5 + (index * 0.05), 0.95);
             
             return (
               <Animated.View 
@@ -188,12 +200,12 @@ export default function MinesweeperBoard({
                   styles.themeCircleWrapper,
                   {
                     opacity: menuAnimWidth.interpolate({
-                      inputRange: [0, 0.2 + (index * 0.15), 1],
+                      inputRange: [0, opacityDelay, 1],
                       outputRange: [0, 0, 1]
                     }),
                     transform: [{
                       scale: menuAnimWidth.interpolate({
-                        inputRange: [0, 0.5 + (index * 0.1), 1],
+                        inputRange: [0, scaleDelay, 1],
                         outputRange: [0.5, 0.5, 1]
                       })
                     }]
@@ -718,37 +730,28 @@ export default function MinesweeperBoard({
             styles.scrollContainer, 
             themeStyle.scrollContainer,
             { 
-              width: isPC ? Math.min(boardWidth + 20, CONTAINER_WIDTH) : CONTAINER_WIDTH,
-              height: isPC ? CONTAINER_HEIGHT : Math.min(boardHeight + 20, CONTAINER_HEIGHT),
-              backgroundColor: 'transparent', // Fond transparent
+              width: CONTAINER_WIDTH, // Largeur fixe basée sur la taille standard
+              // Pas de restriction de hauteur pour que la grille s'étende naturellement
+              backgroundColor: 'transparent',
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.2,
               shadowRadius: 5,
               elevation: 4,
-              borderWidth: 0, // Enlever la bordure si besoin
+              borderWidth: 0,
             }
           ]}>
-            <ScrollView
-              ref={scrollViewRef}
-              horizontal={true}
-              showsHorizontalScrollIndicator={true}
-            >
-              <ScrollView
-                showsVerticalScrollIndicator={true}
-              >
-                <View style={[
-                  styles.boardContainer,
-                  { 
-                    width: boardWidth,
-                    height: boardHeight,
-                    backgroundColor: 'transparent' // Fond transparent pour le conteneur du board
-                  }
-                ]}>
-                  {renderBoard()}
-                </View>
-              </ScrollView>
-            </ScrollView>
+            {/* Supprimer les ScrollViews imbriqués et laisser la grille s'étendre naturellement */}
+            <View style={[
+              styles.boardContainer,
+              { 
+                width: boardWidth,
+                // Pas de restriction de hauteur
+                backgroundColor: 'transparent' // Fond transparent pour le conteneur du board
+              }
+            ]}>
+              {renderBoard()}
+            </View>
           </View>
           
           <View style={[styles.modeContainer, themeStyle.modeContainer]}>
@@ -780,5 +783,5 @@ export default function MinesweeperBoard({
         </View>
       </TouchableWithoutFeedback>
     </ScrollView>
-  );
+  ); 
 }
