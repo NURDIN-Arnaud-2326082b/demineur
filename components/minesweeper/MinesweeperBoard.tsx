@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, TouchableOpacity, Dimensions, Vibration, Switch, ScrollView, Animated, Alert, TouchableWithoutFeedback } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { styles, colors, THEMES } from './MinesweeperStyles';
+import { styles, colors, THEMES, MinesweeperTheme } from './MinesweeperStyles';
 
-// Game cell types
 type CellState = {
   isMine: boolean;
   isRevealed: boolean;
@@ -12,23 +11,27 @@ type CellState = {
   isExploded?: boolean;
 };
 
-// Game difficulty settings
 type Difficulty = {
   rows: number;
   cols: number;
   mines: number;
-  scale: number;
   name: string;
 };
 
-const screenWidth = Dimensions.get('window').width;
-const BASE_CELL_SIZE = 35; // Taille de base des cellules
-const CONTAINER_SIZE = Math.min(screenWidth - 40, 350); // Taille fixe du conteneur
+const window = Dimensions.get('window');
+const screenWidth = window.width;
+const screenHeight = window.height;
+const isLandscape = screenWidth > screenHeight;
+const isPC = screenWidth >= 768;
 
+// Taille fixe pour les cellules, quel que soit le niveau de difficulté
+const FIXED_CELL_SIZE = 35;
+
+// Définition des difficultés (sans scale car nous utilisons une taille fixe)
 const DIFFICULTIES: Record<string, Difficulty> = {
-  easy: { rows: 9, cols: 9, mines: 10, scale: 1, name: 'Facile' },
-  medium: { rows: 16, cols: 16, mines: 40, scale: 0.6, name: 'Moyen' },
-  hard: { rows: 16, cols: 30, mines: 99, scale: 0.35, name: 'Difficile' },
+  easy: { rows: 9, cols: 9, mines: 10, name: 'Facile' },
+  medium: { rows: 16, cols: 16, mines: 40, name: 'Moyen' },
+  hard: { rows: 16, cols: 30, mines: 99, name: 'Difficile' },
 };
 
 export default function MinesweeperBoard({
@@ -40,7 +43,6 @@ export default function MinesweeperBoard({
   onGameOver?: () => void;
   onGameWin?: () => void;
 }) {
-  // Utiliser un état local pour la difficulté au lieu d'un prop
   const [difficulty, setDifficulty] = useState<keyof typeof DIFFICULTIES>(initialDifficulty);
   const [board, setBoard] = useState<CellState[][]>([]);
   const [gameOver, setGameOver] = useState(false);
@@ -52,33 +54,33 @@ export default function MinesweeperBoard({
   const [gameStarted, setGameStarted] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // États pour le thème
   const [currentTheme, setCurrentTheme] = useState(THEMES[0]);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   
-  // Animation pour le menu de thèmes
   const menuAnimWidth = useRef(new Animated.Value(0)).current;
-  
-  // Animation pour la victoire
+  const carpetOpacity = useRef(new Animated.Value(0)).current;
   const winAnimation = useRef(new Animated.Value(0)).current;
   
-  const { rows, cols, mines, scale, name } = DIFFICULTIES[difficulty];
+  const { rows, cols, mines, name } = DIFFICULTIES[difficulty];
   const scrollViewRef = useRef<ScrollView>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Taille des cellules en fonction du zoom
-  const cellSize = BASE_CELL_SIZE * scale;
+  // Taille fixe pour les cellules
+  const cellSize = FIXED_CELL_SIZE;
   
   // Calculer la taille totale du plateau
   const boardWidth = cols * cellSize;
   const boardHeight = rows * cellSize;
+  
+  // Déterminer l'orientation du conteneur en fonction du dispositif
+  // PC: horizontal (container plus large), Mobile: vertical (container plus haut)
+  const CONTAINER_WIDTH = isPC ? Math.min(screenWidth * 0.8, 1200) : Math.min(screenWidth - 40, 350);
+  const CONTAINER_HEIGHT = isPC ? Math.min(screenHeight * 0.6, 500) : Math.min(screenHeight * 0.6, 600);
 
-  // Initialize empty board
   useEffect(() => {
     setIsInitializing(true);
     initializeBoard();
     
-    // Réinitialiser le scroll quand on change de difficulté
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollTo({ x: 0, y: 0, animated: false });
     }
@@ -90,7 +92,6 @@ export default function MinesweeperBoard({
     };
   }, [difficulty]);
 
-  // Gestion du timer
   useEffect(() => {
     if (gameStarted && !gameOver && !gameWon) {
       timerRef.current = setInterval(() => {
@@ -106,7 +107,6 @@ export default function MinesweeperBoard({
     };
   }, [gameStarted, gameOver, gameWon]);
   
-  // Animation de victoire
   useEffect(() => {
     if (gameWon) {
       Animated.sequence([
@@ -131,7 +131,6 @@ export default function MinesweeperBoard({
     }
   }, [gameWon, winAnimation]);
 
-  // Animation du menu de thèmes
   useEffect(() => {
     if (showThemeMenu) {
       // Animation d'ouverture du menu
@@ -154,15 +153,78 @@ export default function MinesweeperBoard({
   // Fonction pour changer de thème
   const changeTheme = (theme: typeof THEMES[0]) => {
     setCurrentTheme(theme);
-    // setShowThemeMenu(false); // On pourrait laisser ouvert pour voir le changement
+    // On peut laisser le menu ouvert après la sélection pour voir l'effet du changement
+    // ou le fermer comme dans l'exemple original
+    setShowThemeMenu(false);
   };
   
-  // Fonction pour changer de difficulté
+  const renderThemeCircles = () => {
+    // Calculer la largeur totale dont on a besoin pour tous les cercles
+    const themeCircleWidth = 50; // Largeur d'un cercle avec sa marge
+    const totalWidth = themeCircleWidth * THEMES.length;
+    
+    // Transformer la valeur animée pour la largeur du menu
+    const menuWidth = menuAnimWidth.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, totalWidth]
+    });
+    
+    return (
+      <Animated.View 
+        style={[
+          styles.themeMenuRollout,
+          { width: menuWidth }
+        ]}
+      >
+        <View style={styles.themeCirclesContainer}>
+          {THEMES.map((theme, index) => {
+            // Calculer un délai d'apparition pour chaque cercle
+            const delay = index * 100;
+            
+            return (
+              <Animated.View 
+                key={theme.id}
+                style={[
+                  styles.themeCircleWrapper,
+                  {
+                    opacity: menuAnimWidth.interpolate({
+                      inputRange: [0, 0.2 + (index * 0.15), 1],
+                      outputRange: [0, 0, 1]
+                    }),
+                    transform: [{
+                      scale: menuAnimWidth.interpolate({
+                        inputRange: [0, 0.5 + (index * 0.1), 1],
+                        outputRange: [0.5, 0.5, 1]
+                      })
+                    }]
+                  }
+                ]}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.themeCircle,
+                    { backgroundColor: theme.cellColor },
+                    currentTheme.id === theme.id && styles.activeThemeCircle
+                  ]}
+                  onPress={() => changeTheme(theme)}
+                >
+                  {currentTheme.id === theme.id && (
+                    <View style={styles.themeCircleCheckmark}>
+                      <ThemedText style={styles.checkmarkText}>✓</ThemedText>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
+        </View>
+      </Animated.View>
+    );
+  };
+  
   const changeDifficulty = (newDifficulty: keyof typeof DIFFICULTIES) => {
-    // Ne pas changer si c'est déjà la difficulté actuelle
     if (newDifficulty === difficulty) return;
     
-    // Confirmer le changement si une partie est en cours
     if (gameStarted && !gameOver && !gameWon) {
       Alert.alert(
         "Changer de difficulté",
@@ -178,13 +240,11 @@ export default function MinesweeperBoard({
         ]
       );
     } else {
-      // Pas de partie en cours, changer directement
       setDifficulty(newDifficulty);
     }
   };
 
   const initializeBoard = () => {
-    // Créer un nouveau tableau vide avec les dimensions actuelles
     const newBoard: CellState[][] = [];
     const currentDifficultySettings = DIFFICULTIES[difficulty];
     const { rows: currentRows, cols: currentCols } = currentDifficultySettings;
@@ -255,14 +315,12 @@ export default function MinesweeperBoard({
   };
 
   const revealCell = (row: number, col: number) => {
-    // Vérification de sécurité pour éviter les erreurs
     if (!board || !board[row] || !board[row][col]) return;
     
     if (gameOver || gameWon || board[row][col].isFlagged || board[row][col].isRevealed) {
       return;
     }
 
-    // Démarrer le jeu et le timer au premier clic
     if (!gameStarted) {
       setGameStarted(true);
     }
@@ -277,14 +335,12 @@ export default function MinesweeperBoard({
     }
 
     if (newBoard[row][col].isMine) {
-      // Vibration feedback
       Vibration.vibrate(500);
       
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
           if (newBoard[i][j].isMine) {
             newBoard[i][j].isRevealed = true;
-            // Marquer la mine cliquée comme explosée
             if (i === row && j === col) {
               newBoard[i][j].isExploded = true;
             }
@@ -303,17 +359,14 @@ export default function MinesweeperBoard({
       return;
     }
 
-    // Légère vibration tactile
     Vibration.vibrate(10);
     
     setBoard(revealCellRecursive(newBoard, row, col));
     
-    // Check if won
     checkWinCondition(newBoard);
   };
 
   const revealCellRecursive = (board: CellState[][], row: number, col: number): CellState[][] => {
-    // Vérification de sécurité
     if (!board || !board[row] || !board[row][col]) return board;
     
     const newBoard = [...board];
@@ -345,14 +398,12 @@ export default function MinesweeperBoard({
   };
 
   const toggleFlag = (row: number, col: number) => {
-    // Vérification de sécurité pour éviter les erreurs
     if (!board || !board[row] || !board[row][col]) return;
     
     if (gameOver || gameWon || board[row][col].isRevealed) {
       return;
     }
 
-    // Démarrer le jeu et le timer au premier drapeau
     if (!gameStarted) {
       setGameStarted(true);
     }
@@ -362,28 +413,23 @@ export default function MinesweeperBoard({
     if (newBoard[row][col].isFlagged) {
       newBoard[row][col].isFlagged = false;
       setFlagsPlaced(flagsPlaced - 1);
-      Vibration.vibrate(5); // Légère vibration
+      Vibration.vibrate(5);
     } else if (flagsPlaced < mines) {
       newBoard[row][col].isFlagged = true;
       setFlagsPlaced(flagsPlaced + 1);
-      Vibration.vibrate(10); // Légère vibration
+      Vibration.vibrate(10);
     } else {
-      // Feedback si plus de drapeaux disponibles
       Vibration.vibrate([0, 30, 10, 30]);
     }
 
     setBoard(newBoard);
     
-    // Check if won
     checkWinCondition(newBoard);
   };
 
-  // Check win condition (toutes les mines marquées ou toutes les cases non-mines révélées)
   const checkWinCondition = (board: CellState[][]) => {
-    // Vérification de sécurité
     if (!board || board.length === 0) return;
     
-    // Vérifier si toutes les mines sont marquées correctement
     let allMinesFlagged = true;
     let allSafeCellsRevealed = true;
     
@@ -391,26 +437,21 @@ export default function MinesweeperBoard({
       for (let j = 0; j < cols; j++) {
         if (!board[i] || !board[i][j]) continue;
         
-        // Si une mine n'est pas marquée d'un drapeau
         if (board[i][j].isMine && !board[i][j].isFlagged) {
           allMinesFlagged = false;
         }
-        // Si une case non-mine n'est pas révélée
         if (!board[i][j].isMine && !board[i][j].isRevealed) {
           allSafeCellsRevealed = false;
         }
-        // Si un drapeau est sur une case non-mine
         if (!board[i][j].isMine && board[i][j].isFlagged) {
           allMinesFlagged = false;
         }
       }
     }
     
-    // Gagné si toutes les mines sont correctement marquées OU toutes les cases sûres révélées
     if (allMinesFlagged || allSafeCellsRevealed) {
       setGameWon(true);
       
-      // Révéler toutes les mines non marquées si on gagne en révélant toutes les cases sûres
       if (allSafeCellsRevealed && !allMinesFlagged) {
         const newBoardCopy = [...board];
         for (let i = 0; i < rows; i++) {
@@ -431,21 +472,17 @@ export default function MinesweeperBoard({
       
       onGameWin();
       
-      // Vibration de victoire
       Vibration.vibrate([0, 50, 50, 100, 50, 150]);
     }
   };
 
-  // Format time in mm:ss
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // Vérifier si une cellule a une cellule adjacente révélée
   const hasRevealedNeighbor = (row: number, col: number) => {
-    // Vérification de sécurité
     if (!board || board.length === 0) return false;
     
     for (let i = Math.max(0, row - 1); i <= Math.min(rows - 1, row + 1); i++) {
@@ -458,7 +495,6 @@ export default function MinesweeperBoard({
     return false;
   };
 
-  // Rendu des boutons de difficulté
   const renderDifficultyButtons = () => {
     return (
       <View style={styles.difficultyButtonsContainer}>
@@ -483,75 +519,15 @@ export default function MinesweeperBoard({
     );
   };
 
-  // Rendu du menu des thèmes avec animation à gauche
-  const renderThemeCircles = () => {
-    // Calculer la largeur totale du menu
-    const themeCircleWidth = 50; // Largeur d'un cercle avec sa marge
-    const totalWidth = themeCircleWidth * THEMES.length;
-    
-    // Animation de la largeur du conteneur
-    const menuWidth = menuAnimWidth.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, totalWidth]
-    });
-    
-    return (
-      <Animated.View 
-        style={[
-          styles.themeMenuRollout,
-          { width: menuWidth, overflow: 'hidden' }
-        ]}
-      >
-        <View style={styles.themeCirclesContainer}>
-          {THEMES.map((theme, index) => (
-            <Animated.View 
-              key={theme.id}
-              style={[
-                styles.themeCircleWrapper,
-                {
-                  opacity: menuAnimWidth.interpolate({
-                    inputRange: [0, 0.2 + (index * 0.15), 1],
-                    outputRange: [0, 0, 1]
-                  }),
-                  transform: [{
-                    scale: menuAnimWidth.interpolate({
-                      inputRange: [0, 0.5 + (index * 0.1), 1],
-                      outputRange: [0.5, 0.5, 1]
-                    })
-                  }]
-                }
-              ]}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.themeCircle,
-                  { backgroundColor: theme.cellColor },
-                  currentTheme.id === theme.id && styles.activeThemeCircle
-                ]}
-                onPress={() => changeTheme(theme)}
-              >
-                {currentTheme.id === theme.id && (
-                  <View style={styles.themeCircleCheckmark}>
-                    <ThemedText style={styles.checkmarkText}>✓</ThemedText>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
-        </View>
-      </Animated.View>
-    );
-  };
+ 
 
   const renderCell = (row: number, col: number) => {
-    // Vérification de sécurité pour éviter l'erreur
     if (!board || !board[row] || !board[row][col]) {
       return null;
     }
     
     const cell = board[row][col];
 
-    // Couleurs basées sur le thème actuel
     const themeColors = {
       cellBackground: currentTheme.cellColor,
       lightBorder: currentTheme.lightBorderColor,
@@ -559,22 +535,19 @@ export default function MinesweeperBoard({
       revealedCell: currentTheme.revealedColor,
       explodedMine: colors.explodedMine,
       regularMine: colors.regularMine,
-      textColor: colors.textColor
+      textColor: currentTheme.textColor
     };
 
-    // Calculer les bordures pour l'effet de "bloc"
     const isTopEdge = row === 0;
     const isBottomEdge = row === rows - 1;
     const isLeftEdge = col === 0;
     const isRightEdge = col === cols - 1;
     
-    // Vérifier si la cellule est à la frontière d'une cellule révélée
     const hasRevealedAbove = row > 0 && board[row - 1] && board[row - 1][col] && board[row - 1][col].isRevealed;
     const hasRevealedBelow = row < rows - 1 && board[row + 1] && board[row + 1][col] && board[row + 1][col].isRevealed;
     const hasRevealedLeft = col > 0 && board[row] && board[row][col - 1] && board[row][col - 1].isRevealed;
     const hasRevealedRight = col < cols - 1 && board[row] && board[row][col + 1] && board[row][col + 1].isRevealed;
     
-    // Est-ce qu'on doit afficher une bordure pour cette cellule?
     const needsBorderTop = cell.isRevealed || hasRevealedAbove || isTopEdge;
     const needsBorderBottom = cell.isRevealed || hasRevealedBelow || isBottomEdge;
     const needsBorderLeft = cell.isRevealed || hasRevealedLeft || isLeftEdge;
@@ -586,10 +559,8 @@ export default function MinesweeperBoard({
     let shadowStyle = {};
 
     if (cell.isRevealed) {
-      // Effet de case enfoncée pour les cases révélées
       backgroundColor = themeColors.revealedCell;
       
-      // Bordures intérieures pour effet de profondeur
       borderStyle = {
         borderWidth: 0,
         borderTopWidth: 2,
@@ -602,7 +573,6 @@ export default function MinesweeperBoard({
         borderBottomColor: '#111',
       };
       
-      // Pas d'ombre pour les cases enfoncées
       shadowStyle = {
         elevation: 0,
         shadowOpacity: 0,
@@ -619,9 +589,6 @@ export default function MinesweeperBoard({
         );
       }
     } else {
-      // Case non révélée - faire partie du bloc uniforme
-      
-      // N'ajouter des bordures que là où nécessaire (frontières avec cases révélées ou bord du plateau)
       borderStyle = {
         borderWidth: 0,
         borderTopWidth: needsBorderTop ? (isTopEdge ? 3 : 2) : 0,
@@ -634,7 +601,6 @@ export default function MinesweeperBoard({
         borderBottomColor: themeColors.darkBorder,
       };
       
-      // Ombre uniquement si on est au bord du plateau ou à côté d'une case révélée
       const needsShadow = isTopEdge || isBottomEdge || isLeftEdge || isRightEdge || hasRevealedNeighbor(row, col);
       
       shadowStyle = needsShadow ? {
@@ -671,27 +637,21 @@ export default function MinesweeperBoard({
   };
 
   const renderBoard = () => {
-    // Vérification de sécurité pour éviter de rendre un tableau incomplet
     if (isInitializing || !board || board.length === 0 || board.length < rows) {
       return (
-        <View style={[styles.boardContainer, { width: boardWidth, height: boardHeight, justifyContent: 'center', alignItems: 'center' }]}>
+        <View style={[styles.boardContainer, { justifyContent: 'center', alignItems: 'center' }]}>
           <ThemedText>Chargement...</ThemedText>
         </View>
       );
     }
     
-    return (
-      <View style={styles.boardContainer}>
-        {board.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.row}>
-            {row.map((_, colIndex) => renderCell(rowIndex, colIndex))}
-          </View>
-        ))}
+    return board.map((row, rowIndex) => (
+      <View key={rowIndex} style={styles.row}>
+        {row.map((_, colIndex) => renderCell(rowIndex, colIndex))}
       </View>
-    );
+    ));
   };
 
-  // Appliquer les couleurs du thème aux styles
   const themeStyle = {
     header: {
       backgroundColor: currentTheme.headerColor,
@@ -702,7 +662,6 @@ export default function MinesweeperBoard({
     },
     scrollContainer: {
       borderColor: currentTheme.borderColor,
-      backgroundColor: currentTheme.cellColor,
     },
     modeContainer: {
       backgroundColor: currentTheme.headerColor,
@@ -715,12 +674,9 @@ export default function MinesweeperBoard({
   return (
     <TouchableWithoutFeedback onPress={() => showThemeMenu && setShowThemeMenu(false)}>
       <View style={styles.container}>
-        {/* Bouton pour ouvrir le menu de sélection de thème avec cercles colorés */}
         <View style={styles.themeButtonContainer}>
-          {/* Menu de thèmes déroulant à gauche */}
           {renderThemeCircles()}
           
-          {/* Bouton de thème */}
           <TouchableOpacity
             style={[styles.themeButton, { backgroundColor: currentTheme.headerColor }]}
             onPress={() => setShowThemeMenu(!showThemeMenu)}
@@ -752,49 +708,53 @@ export default function MinesweeperBoard({
           </View>
         </View>
         
-        {/* Boutons de difficulté */}
         {renderDifficultyButtons()}
         
-        {/* Difficulté actuelle */}
         <ThemedText style={[styles.difficultyText, { color: currentTheme.textColor }]}>
           Niveau: {name} ({rows}×{cols}, {mines} mines)
         </ThemedText>
         
-        {/* Conteneur avec taille fixe pour le jeu */}
         <View style={[
           styles.scrollContainer, 
           themeStyle.scrollContainer,
           { 
-            width: CONTAINER_SIZE, 
-            height: CONTAINER_SIZE,
+            width: isPC ? Math.min(boardWidth + 20, CONTAINER_WIDTH) : CONTAINER_WIDTH,
+            height: isPC ? CONTAINER_HEIGHT : Math.min(boardHeight + 20, CONTAINER_HEIGHT),
+            backgroundColor: 'transparent', // Fond transparent
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
+            shadowOpacity: 0.2,
             shadowRadius: 5,
-            elevation: 8,
+            elevation: 4,
+            borderWidth: 0, // Enlever la bordure si besoin
           }
         ]}>
           <ScrollView
             ref={scrollViewRef}
             horizontal={true}
-            contentContainerStyle={{ width: boardWidth }}
             showsHorizontalScrollIndicator={true}
           >
             <ScrollView
               showsVerticalScrollIndicator={true}
-              contentContainerStyle={{ height: boardHeight }}
             >
-              {renderBoard()}
+              <View style={[
+                styles.boardContainer,
+                { 
+                  width: boardWidth,
+                  height: boardHeight,
+                  backgroundColor: 'transparent' // Fond transparent pour le conteneur du board
+                }
+              ]}>
+                {renderBoard()}
+              </View>
             </ScrollView>
           </ScrollView>
         </View>
         
-        {/* Indicateur de zoom */}
         <ThemedText style={[styles.zoomIndicator, { color: currentTheme.textColor }]}>
-          Zoom: {Math.round(scale * 100)}%
+          {isPC ? 'Vue horizontale' : 'Vue verticale'} • Cellule: {cellSize}px
         </ThemedText>
         
-        {/* Switch pour changer de mode */}
         <View style={[styles.modeContainer, themeStyle.modeContainer]}>
           <ThemedText style={[styles.modeText, { color: currentTheme.textColor }]}>🔍</ThemedText>
           <Switch
@@ -806,12 +766,10 @@ export default function MinesweeperBoard({
           <ThemedText style={[styles.modeText, { color: currentTheme.textColor }]}>🚩</ThemedText>
         </View>
         
-        {/* Texte indiquant le mode actuel */}
         <ThemedText style={[styles.currentMode, { color: currentTheme.textColor }]}>
           Mode: {flagMode ? 'Placer un drapeau' : 'Révéler une case'}
         </ThemedText>
         
-        {/* Affichage du résultat du jeu avec animation */}
         {gameOver && (
           <ThemedText style={styles.gameOverText}>
             Game Over!
