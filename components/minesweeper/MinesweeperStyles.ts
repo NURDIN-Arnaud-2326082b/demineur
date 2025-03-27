@@ -344,5 +344,10 @@ export const styles = StyleSheet.create({
     top: 0,
     right: 0,
     zIndex: 1,
-  }
+  },
+
+  scrollViewContainer: {
+    flexGrow: 1,
+    paddingBottom: 20, // Assure un espace en bas pour le scroll
+  },
 });

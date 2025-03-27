@@ -672,120 +672,113 @@ export default function MinesweeperBoard({
   };
 
   return (
-    <TouchableWithoutFeedback onPress={() => showThemeMenu && setShowThemeMenu(false)}>
-      <View style={styles.container}>
-        <View style={styles.themeButtonContainer}>
-          {renderThemeCircles()}
-          
-          <TouchableOpacity
-            style={[styles.themeButton, { backgroundColor: currentTheme.headerColor }]}
-            onPress={() => setShowThemeMenu(!showThemeMenu)}
-          >
-            <ThemedText style={styles.themeButtonText}>🎨</ThemedText>
-          </TouchableOpacity>
-        </View>
-
-        <View style={[styles.header, themeStyle.header]}>
-          <View style={styles.counterContainer}>
-            <ThemedText style={[styles.counter, { color: currentTheme.textColor }]}>
-              🚩 {mines - flagsPlaced}
-            </ThemedText>
-          </View>
-          
-          <TouchableOpacity 
-            style={[styles.resetButton, themeStyle.resetButton]} 
-            onPress={initializeBoard}
-          >
-            <ThemedText style={styles.resetText}>
-              {gameOver ? '😵' : gameWon ? '😎' : gameStarted ? '🙂' : '😊'}
-            </ThemedText>
-          </TouchableOpacity>
-          
-          <View style={styles.timerContainer}>
-            <ThemedText style={[styles.timer, { color: currentTheme.textColor }]}>
-              ⏱️ {formatTime(gameTime)}
-            </ThemedText>
-          </View>
-        </View>
-        
-        {renderDifficultyButtons()}
-        
-        <ThemedText style={[styles.difficultyText, { color: currentTheme.textColor }]}>
-          Niveau: {name} ({rows}×{cols}, {mines} mines)
-        </ThemedText>
-        
-        <View style={[
-          styles.scrollContainer, 
-          themeStyle.scrollContainer,
-          { 
-            width: isPC ? Math.min(boardWidth + 20, CONTAINER_WIDTH) : CONTAINER_WIDTH,
-            height: isPC ? CONTAINER_HEIGHT : Math.min(boardHeight + 20, CONTAINER_HEIGHT),
-            backgroundColor: 'transparent', // Fond transparent
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 5,
-            elevation: 4,
-            borderWidth: 0, // Enlever la bordure si besoin
-          }
-        ]}>
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal={true}
-            showsHorizontalScrollIndicator={true}
-          >
-            <ScrollView
-              showsVerticalScrollIndicator={true}
+    <ScrollView 
+      contentContainerStyle={styles.scrollViewContainer}
+      showsVerticalScrollIndicator={true}
+    >
+      <TouchableWithoutFeedback onPress={() => showThemeMenu && setShowThemeMenu(false)}>
+        <View style={styles.container}>
+          <View style={styles.themeButtonContainer}>
+            {renderThemeCircles()}
+            
+            <TouchableOpacity
+              style={[styles.themeButton, { backgroundColor: currentTheme.headerColor }]}
+              onPress={() => setShowThemeMenu(!showThemeMenu)}
             >
-              <View style={[
-                styles.boardContainer,
-                { 
-                  width: boardWidth,
-                  height: boardHeight,
-                  backgroundColor: 'transparent' // Fond transparent pour le conteneur du board
-                }
-              ]}>
-                {renderBoard()}
-              </View>
+              <ThemedText style={styles.themeButtonText}>🎨</ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.header, themeStyle.header]}>
+            <View style={styles.counterContainer}>
+              <ThemedText style={[styles.counter, { color: currentTheme.textColor }]}>
+                🚩 {mines - flagsPlaced}
+              </ThemedText>
+            </View>
+            
+            <TouchableOpacity 
+              style={[styles.resetButton, themeStyle.resetButton]} 
+              onPress={initializeBoard}
+            >
+              <ThemedText style={styles.resetText}>
+                {gameOver ? '😵' : gameWon ? '😎' : gameStarted ? '🙂' : '😊'}
+              </ThemedText>
+            </TouchableOpacity>
+            
+            <View style={styles.timerContainer}>
+              <ThemedText style={[styles.timer, { color: currentTheme.textColor }]}>
+                ⏱️ {formatTime(gameTime)}
+              </ThemedText>
+            </View>
+          </View>
+          
+          {renderDifficultyButtons()}
+          
+          <View style={[
+            styles.scrollContainer, 
+            themeStyle.scrollContainer,
+            { 
+              width: isPC ? Math.min(boardWidth + 20, CONTAINER_WIDTH) : CONTAINER_WIDTH,
+              height: isPC ? CONTAINER_HEIGHT : Math.min(boardHeight + 20, CONTAINER_HEIGHT),
+              backgroundColor: 'transparent', // Fond transparent
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 5,
+              elevation: 4,
+              borderWidth: 0, // Enlever la bordure si besoin
+            }
+          ]}>
+            <ScrollView
+              ref={scrollViewRef}
+              horizontal={true}
+              showsHorizontalScrollIndicator={true}
+            >
+              <ScrollView
+                showsVerticalScrollIndicator={true}
+              >
+                <View style={[
+                  styles.boardContainer,
+                  { 
+                    width: boardWidth,
+                    height: boardHeight,
+                    backgroundColor: 'transparent' // Fond transparent pour le conteneur du board
+                  }
+                ]}>
+                  {renderBoard()}
+                </View>
+              </ScrollView>
             </ScrollView>
-          </ScrollView>
-        </View>
-        
-        <ThemedText style={[styles.zoomIndicator, { color: currentTheme.textColor }]}>
-          {isPC ? 'Vue horizontale' : 'Vue verticale'} • Cellule: {cellSize}px
-        </ThemedText>
-        
-        <View style={[styles.modeContainer, themeStyle.modeContainer]}>
-          <ThemedText style={[styles.modeText, { color: currentTheme.textColor }]}>🔍</ThemedText>
-          <Switch
-            value={flagMode}
-            onValueChange={setFlagMode}
-            trackColor={{ false: '#767577', true: currentTheme.cellColor }}
-            thumbColor={flagMode ? '#FF4500' : '#f4f3f4'}
-          />
-          <ThemedText style={[styles.modeText, { color: currentTheme.textColor }]}>🚩</ThemedText>
-        </View>
-        
-        <ThemedText style={[styles.currentMode, { color: currentTheme.textColor }]}>
-          Mode: {flagMode ? 'Placer un drapeau' : 'Révéler une case'}
-        </ThemedText>
-        
-        {gameOver && (
-          <ThemedText style={styles.gameOverText}>
-            Game Over!
-          </ThemedText>
-        )}
-        
-        {gameWon && (
-          <Animated.View style={{ 
-            transform: [{ scale: winAnimation }],
-          }}>
-            <ThemedText style={styles.gameWonText}>
-              Victoire! 🎉 {formatTime(gameTime)}
+          </View>
+          
+          <View style={[styles.modeContainer, themeStyle.modeContainer]}>
+            <ThemedText style={[styles.modeText, { color: currentTheme.textColor }]}>🔍</ThemedText>
+            <Switch
+              value={flagMode}
+              onValueChange={setFlagMode}
+              trackColor={{ false: '#767577', true: currentTheme.cellColor }}
+              thumbColor={flagMode ? '#FF4500' : '#f4f3f4'}
+            />
+            <ThemedText style={[styles.modeText, { color: currentTheme.textColor }]}>🚩</ThemedText>
+          </View>
+          
+          {gameOver && (
+            <ThemedText style={styles.gameOverText}>
+              Game Over!
             </ThemedText>
-          </Animated.View>
-        )}
-      </View>
-    </TouchableWithoutFeedback>
+          )}
+          
+          {gameWon && (
+            <Animated.View style={{ 
+              transform: [{ scale: winAnimation }],
+            }}>
+              <ThemedText style={styles.gameWonText}>
+                Victoire! 🎉 {formatTime(gameTime)}
+              </ThemedText>
+            </Animated.View>
+          )}
+        </View>
+      </TouchableWithoutFeedback>
+    </ScrollView>
   );
 }

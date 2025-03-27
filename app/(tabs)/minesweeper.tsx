@@ -8,9 +8,7 @@ import MinesweeperBoard from '@/components/minesweeper/MinesweeperBoard';
 export default function MinesweeperScreen() {
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: 'Démineur' }} />
-      <ThemedText type="title" style={styles.title}>Démineur</ThemedText>
-      
+      <Stack.Screen options={{ title: 'Démineur' }} />      
       <View style={styles.boardWrapper}>
         <MinesweeperBoard 
           onGameOver={() => console.log('Game Over')}
