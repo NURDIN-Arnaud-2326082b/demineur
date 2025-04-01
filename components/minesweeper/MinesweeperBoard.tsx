@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, TouchableOpacity, Dimensions, Vibration, Switch, ScrollView, Animated, Alert, TouchableWithoutFeedback } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { styles, colors, THEMES, MinesweeperTheme } from './MinesweeperStyles';
+import { useGameStats } from '@/hooks/useGameStats';
 
 type CellState = {
   isMine: boolean;
@@ -66,6 +67,9 @@ export default function MinesweeperBoard({
   const { rows, cols, mines, name } = DIFFICULTIES[difficulty];
   const scrollViewRef = useRef<ScrollView>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Ajouter le hook pour les statistiques
+  const { updateStats } = useGameStats();
 
   // Calculer la taille des cellules pour maintenir la même largeur de plateau quel que soit le mode
   const getAdjustedCellSize = () => {
@@ -367,6 +371,9 @@ export default function MinesweeperBoard({
         timerRef.current = null;
       }
       
+      // Ajouter la mise à jour des statistiques pour une défaite
+      updateStats(false, difficulty as 'easy' | 'medium' | 'hard', gameTime);
+      
       onGameOver();
       return;
     }
@@ -481,6 +488,9 @@ export default function MinesweeperBoard({
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      
+      // Ajouter la mise à jour des statistiques pour une victoire
+      updateStats(true, difficulty as 'easy' | 'medium' | 'hard', gameTime);
       
       onGameWin();
       

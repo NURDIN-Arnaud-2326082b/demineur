@@ -1,10 +1,31 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { Stack } from 'expo-router';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
+import { useGameStats } from '@/hooks/useGameStats';
+
+// Fonction d'aide pour formater le temps
+const formatTime = (seconds: number | null): string => {
+  if (seconds === null) return '--:--';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+};
 
 export default function StatsScreen() {
+  const { stats, isLoading, loadStats } = useGameStats();
+  
+  // Recharger les statistiques lorsque l'écran est affiché
+  useEffect(() => {
+    loadStats();
+  }, []);
+  
+  // Calculer le taux de victoire
+  const winRate = stats.gamesPlayed > 0 
+    ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) 
+    : 0;
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ title: 'Statistiques' }} />
@@ -16,15 +37,23 @@ export default function StatsScreen() {
           Vos performances au Démineur
         </ThemedText>
         
-        {/* Ici, vous pourrez ajouter des graphiques, tableaux de scores, etc. */}
-        <View style={styles.statsCard}>
-          <ThemedText type="subtitle">Parties jouées: 0</ThemedText>
-          <ThemedText>Parties gagnées: 0</ThemedText>
-          <ThemedText>Taux de victoire: 0%</ThemedText>
-          <ThemedText>Meilleur temps (Facile): --:--</ThemedText>
-          <ThemedText>Meilleur temps (Moyen): --:--</ThemedText>
-          <ThemedText>Meilleur temps (Difficile): --:--</ThemedText>
-        </View>
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#0a7ea4" />
+        ) : (
+          <View style={styles.statsCard}>
+            <ThemedText type="subtitle">Parties jouées: {stats.gamesPlayed}</ThemedText>
+            <ThemedText>Parties gagnées: {stats.gamesWon}</ThemedText>
+            <ThemedText>Taux de victoire: {winRate}%</ThemedText>
+            <ThemedText>Meilleur temps (Facile): {formatTime(stats.bestTimeEasy)}</ThemedText>
+            <ThemedText>Meilleur temps (Moyen): {formatTime(stats.bestTimeMedium)}</ThemedText>
+            <ThemedText>Meilleur temps (Difficile): {formatTime(stats.bestTimeHard)}</ThemedText>
+            {stats.lastGameDate && (
+              <ThemedText style={{ marginTop: 10, fontStyle: 'italic' }}>
+                Dernière partie: {new Date(stats.lastGameDate).toLocaleDateString()}
+              </ThemedText>
+            )}
+          </View>
+        )}
       </View>
     </ThemedView>
   );
