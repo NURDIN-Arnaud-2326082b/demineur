@@ -2,6 +2,14 @@
 
 Application mobile de démineur développée avec React Native et Expo.
 
+![Logo Démineur](./assets/images/logodm.png)
+
+## 📱 Application disponible en téléchargement
+
+Vous pouvez télécharger l'application APK Android directement depuis notre site web:
+
+**[⬇️ Télécharger Démineur ⬇️](https://nurdin-arnaud-2326082b.github.io/demineur/)**
+
 ## À propos
 
 Cette application est une version moderne et personnalisable du jeu classique du démineur, disponible sur Android et iOS. Le but du jeu est de découvrir toutes les cases qui ne contiennent pas de mines en évitant de cliquer sur celles qui en contiennent.
@@ -33,6 +41,11 @@ Cette application est une version moderne et personnalisable du jeu classique du
 
 ## Installation
 
+### Option 1: Télécharger l'APK
+La façon la plus simple d'installer le jeu est de visiter notre [page de téléchargement](https://nurdin-arnaud-2326082b.github.io/demineur/) et de suivre les instructions.
+
+### Option 2: Compilation depuis les sources
+
 1. Cloner le répertoire
 
 ```bash
@@ -52,13 +65,15 @@ npm install
 npm run web
 ```
 Si vous voulez tester l'application avec Expo sur votre téléphone rendez vous sur votre store favori et installez l'application **Expo go**. Ensuite, scannez le code qr qui apparaît dans le terminal quand vous exécutez la commande ci-dessus à l'aide du scanner intégré à l'application.
+
 ## Comment jouer
 
-1. Choisissez un niveau de difficulté et un thème sur l'écran d'accueil
-2. Appuyez sur une case pour la révéler
-3. Les chiffres indiquent le nombre de mines adjacentes
-4. Utilisez le mode drapeau (🚩) en activant l'interrupteur en bas de l'écran pour marquer les mines potentielles
-5. Découvrez toutes les cases sans mines pour gagner
+1. Choisissez un niveau de difficulté
+2. Vous pouvez choisir un thèe via le bouton de palette en haut à droite
+3. Appuyez sur une case pour la révéler
+4. Les chiffres indiquent le nombre de mines adjacentes
+5. Utilisez le mode drapeau (🚩) en activant l'interrupteur en bas de l'écran pour marquer les mines potentielles
+6. Découvrez toutes les cases sans mines pour gagner
 
 ## Mode One Shot
 
