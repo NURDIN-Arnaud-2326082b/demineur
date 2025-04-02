@@ -19,7 +19,9 @@
       },
       "package": "com.yourcompany.demineur",
       "versionCode": 1,
-      "permissions": ["VIBRATE"],
+      "permissions": [
+        "VIBRATE"
+      ],
       "softwareKeyboardLayoutMode": "pan",
       "allowBackup": true,
       "splash": {
@@ -47,6 +49,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "e5703a0b-09cf-47e6-98e4-7026ece61e39"
+      }
     }
   }
 }
