@@ -2,8 +2,6 @@
 
 Application mobile de démineur développée avec React Native et Expo.
 
-![Logo Démineur](./assets/images/logodm.png)
-
 ## À propos
 
 Cette application est une version moderne et personnalisable du jeu classique du démineur, disponible sur Android et iOS. Le but du jeu est de découvrir toutes les cases qui ne contiennent pas de mines en évitant de cliquer sur celles qui en contiennent.
@@ -51,9 +49,9 @@ npm install
 3. Lancer l'application
 
 ```bash
-npx expo start
+npm run web
 ```
-
+Si vous voulez tester l'application avec Expo sur votre téléphone rendez vous sur votre store favori et installez l'application **Expo go**. Ensuite, scannez le code qr qui apparaît dans le terminal quand vous exécutez la commande ci-dessus à l'aide du scanner intégré à l'application.
 ## Comment jouer
 
 1. Choisissez un niveau de difficulté et un thème sur l'écran d'accueil
