@@ -1,10 +1,10 @@
 :root {
     --primary-color: #0a7ea4;
     --secondary-color: #ff8000;
-    --background-color: #f8f9fa;
-    --card-background: #ffffff;
-    --text-color: #333333;
-    --text-light: #6c757d;
+    --background-color: #333333;
+    --card-background: #6c757d;
+    --text-color:  #f8f9fa;
+    --text-light: #ffffff;
     --border-color: #dee2e6;
     --success-color: #28a745;
 }
