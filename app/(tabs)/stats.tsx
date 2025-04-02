@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, Platform, TouchableOpacity, Alert } from 'react-native';
 import { Stack } from 'expo-router';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -14,7 +14,7 @@ const formatTime = (seconds: number | null): string => {
 };
 
 export default function StatsScreen() {
-  const { stats, isLoading, loadStats } = useGameStats();
+  const { stats, isLoading, loadStats, resetStats } = useGameStats();
   
   // Recharger les statistiques lorsque l'écran est affiché
   useEffect(() => {
@@ -25,6 +25,22 @@ export default function StatsScreen() {
   const winRate = stats.gamesPlayed > 0 
     ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) 
     : 0;
+
+  // Fonction pour demander la confirmation avant de réinitialiser
+  const confirmReset = () => {
+    Alert.alert(
+      "Réinitialiser les statistiques",
+      "Êtes-vous sûr de vouloir réinitialiser toutes vos statistiques ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        { 
+          text: "Réinitialiser", 
+          onPress: () => resetStats(),
+          style: 'destructive' 
+        }
+      ]
+    );
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -54,6 +70,19 @@ export default function StatsScreen() {
             )}
           </View>
         )}
+        
+        {/* Bouton de réinitialisation avec style adapté pour Android */}
+        <TouchableOpacity
+          style={[
+            styles.resetButton,
+            Platform.OS === 'android' && styles.resetButtonAndroid
+          ]}
+          onPress={confirmReset}
+        >
+          <ThemedText style={styles.resetButtonText}>
+            Réinitialiser les statistiques
+          </ThemedText>
+        </TouchableOpacity>
       </View>
     </ThemedView>
   );
@@ -84,5 +113,27 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'flex-start',
     gap: 10,
+    ...Platform.select({
+      android: {
+        elevation: 2,
+        backgroundColor: 'rgba(0, 0, 0, 0.03)'
+      }
+    })
   },
+  resetButton: {
+    marginTop: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#d9534f',
+    borderRadius: 8,
+    alignSelf: 'center',
+  },
+  resetButtonAndroid: {
+    elevation: 2,
+    paddingVertical: 10,
+  },
+  resetButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  }
 });
