@@ -2,8 +2,6 @@
 
 Application mobile de démineur développée avec React Native et Expo.
 
-![Logo Démineur](./assets/images/logodm.png)
-
 ## 📱 Application disponible en téléchargement
 
 Vous pouvez télécharger l'application APK Android directement depuis notre site web:
@@ -86,7 +84,3 @@ Ce projet utilise :
 - [React Native](https://reactnative.dev) pour le développement multi-plateforme
 - [Expo Router](https://docs.expo.dev/router/introduction) pour la navigation
 - [AsyncStorage](https://react-native-async-storage.github.io/async-storage/) pour sauvegarder les statistiques
-
-## Licence
-
-[MIT](LICENSE)
