@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+// Suppression de useEffect qui n'est pas utilisé
 import { StyleSheet, View, TouchableOpacity, Image } from 'react-native';
 import { router } from 'expo-router';
 import { ThemedView } from '@/components/ThemedView';
@@ -15,8 +16,13 @@ export default function WelcomeScreen() {
       
       <View style={styles.content}>
         <View style={styles.titleContainer}>
+          <Image 
+            source={require('@/assets/images/logodm.png')} 
+            style={{ width: 200, height: 200, marginBottom: 20 }}
+            resizeMode="contain"
+          />
           <ThemedText type="title" style={styles.title}>Démineur</ThemedText>
-          <ThemedText style={styles.subtitle}>Trouvez les mines et évitez les explosions</ThemedText>
+          <ThemedText style={styles.subtitle}>Arrivez vous à trouver toutes les mines avant l'explosion ?</ThemedText>
         </View>
         
         <View style={styles.buttonContainer}>
@@ -48,11 +54,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 48,
+    lineHeight: 62, // Ajouté pour éviter la coupure du texte sur Android
     marginBottom: 16,
     textAlign: 'center',
+    paddingVertical: 2, // Petit padding pour s'assurer que le texte a assez d'espace
   },
   subtitle: {
     fontSize: 18,
+    lineHeight: 27, // Ajouté pour éviter la coupure du texte sur Android
     textAlign: 'center',
     opacity: 0.8,
     marginHorizontal: 20,
@@ -75,6 +84,7 @@ const styles = StyleSheet.create({
   playButtonText: {
     color: 'white',
     fontSize: 22,
+    lineHeight: 28, // Ajouté pour cohérence avec les autres textes
     fontWeight: 'bold',
     textAlign: 'center',
   },

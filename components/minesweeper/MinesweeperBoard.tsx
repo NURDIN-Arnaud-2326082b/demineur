@@ -1,9 +1,56 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Dimensions, Vibration, Switch, ScrollView, Animated, ToastAndroid, Modal, Platform, PermissionsAndroid, TouchableWithoutFeedback } from 'react-native';
+import { View, TouchableOpacity, Dimensions, Vibration, Switch, ScrollView, Animated, ToastAndroid, Modal, Platform, PermissionsAndroid, TouchableWithoutFeedback, Image } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { styles, colors, THEMES, MinesweeperTheme } from './MinesweeperStyles';
 import { useGameStats } from '@/hooks/useGameStats';
 import { router } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+
+// Composant pour le drapeau stylisé
+const FlagIcon = ({ size, theme }: { size: number, theme: MinesweeperTheme }) => {
+  const iconSize = size * 0.6; // Proportionnel à la taille de la cellule
+  
+  return (
+    <View style={{
+      width: size,
+      height: size,
+      backgroundColor: '#444444', // Fond gris foncé
+      borderRadius: 3,
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+      <FontAwesome 
+        name="flag" 
+        size={iconSize} 
+        color="#FF4500" // Orange-rouge
+      />
+    </View>
+  );
+};
+
+// Composant pour afficher l'image de la bombe
+const BombImage = ({ size, isExploded }: { size: number, isExploded?: boolean }) => {
+  return (
+    <View style={{
+      width: size,
+      height: size,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isExploded ? colors.explodedMine : 'transparent',
+      borderRadius: 4,
+    }}>
+      <Image 
+        source={require('@/assets/images/logodm.png')}
+        style={{
+          width: size * 0.7,
+          height: size * 0.7,
+          tintColor: isExploded ? '#FFFFFF' : undefined, // Blanc si explosée pour meilleur contraste
+        }}
+        resizeMode="contain"
+      />
+    </View>
+  );
+};
 
 type CellState = {
   isMine: boolean;
@@ -23,7 +70,6 @@ type Difficulty = {
 const window = Dimensions.get('window');
 const screenWidth = window.width;
 const screenHeight = window.height;
-const isLandscape = screenWidth > screenHeight;
 const isPC = screenWidth >= 768;
 
 // Taille fixe de base pour les cellules, quel que soit le niveau de difficulté
@@ -80,7 +126,6 @@ export default function MinesweeperBoard({
   const [showThemeMenu, setShowThemeMenu] = useState(false);
 
   const menuAnimWidth = useRef(new Animated.Value(0)).current;
-  const carpetOpacity = useRef(new Animated.Value(0)).current;
   const winAnimation = useRef(new Animated.Value(0)).current;
 
   const { rows, cols, mines, name } = DIFFICULTIES[difficulty];
@@ -157,7 +202,6 @@ export default function MinesweeperBoard({
 
   // Calculer la taille totale du plateau
   const boardWidth = cols * cellSize;
-  const boardHeight = rows * cellSize;
 
   // Déterminer si on a besoin de scroll horizontal
   const needsHorizontalScroll = difficulty !== 'easy' && boardWidth > screenWidth * 0.9;
@@ -616,13 +660,25 @@ export default function MinesweeperBoard({
   const checkWinCondition = (board: CellState[][]) => {
     if (!board || board.length === 0) return;
 
+    // Empêcher la victoire au premier coup (sauf en mode oneshot)
+    if (firstClick && difficulty !== 'oneshot') {
+      return;
+    }
+
     let allMinesFlagged = true;
     let allSafeCellsRevealed = true;
+
+    // Vérifier s'il y a au moins une case révélée (pas juste des drapeaux)
+    let hasRevealedNonMineCell = false;
 
     for (let i = 0; i < rows; i++) {
       for (let j = 0; j < cols; j++) {
         if (!board[i] || !board[i][j]) continue;
 
+        if (!board[i][j].isMine && board[i][j].isRevealed) {
+          hasRevealedNonMineCell = true;
+        }
+        
         if (board[i][j].isMine && !board[i][j].isFlagged) {
           allMinesFlagged = false;
         }
@@ -633,6 +689,11 @@ export default function MinesweeperBoard({
           allMinesFlagged = false;
         }
       }
+    }
+
+    // Ne pas permettre la victoire uniquement avec des drapeaux (sauf oneshot)
+    if (difficulty !== 'oneshot' && !hasRevealedNonMineCell) {
+      return;
     }
 
     if (allMinesFlagged || allSafeCellsRevealed) {
@@ -772,16 +833,13 @@ export default function MinesweeperBoard({
         shadowStyle = { elevation: 0 };
 
         if (cell.isMine) {
-          // Réduire drastiquement la taille pour Android
-          const mineTextSize = Math.max(12 * SCALE_FACTOR, 8);
-          content = (
-            <ThemedText style={[
-              styles.mine, 
-              cell.isExploded && styles.explodedMine,
-              { fontSize: mineTextSize, lineHeight: mineTextSize }
-            ]}>💣</ThemedText>
-          );
-          backgroundColor = cell.isExploded ? themeColors.explodedMine : themeColors.regularMine;
+          // Modification pour assurer que l'image de la bombe est visible
+          content = <BombImage size={cellSize} isExploded={cell.isExploded} />;
+          
+          // Ne pas changer la couleur de fond ici, le composant BombImage s'en charge pour la cellule explosée
+          backgroundColor = cell.isExploded 
+            ? currentTheme.revealedColor // Utiliser la couleur révélée normale
+            : themeColors.regularMine;
         } else if (cell.adjacentMines > 0) {
           const numberTextSize = Math.max(14 * SCALE_FACTOR, 10);
           content = (
@@ -804,12 +862,7 @@ export default function MinesweeperBoard({
         shadowStyle = cell.isFlagged ? { elevation: 2 } : { elevation: 0 };
 
         if (cell.isFlagged) {
-          // Réduire drastiquement la taille pour Android
-          const flagTextSize = Math.max(12 * SCALE_FACTOR, 8);
-          content = <ThemedText style={[
-            styles.flag, 
-            { fontSize: flagTextSize, lineHeight: flagTextSize }
-          ]}>🚩</ThemedText>;
+          content = <FlagIcon size={cellSize} theme={currentTheme} />;
         }
       }
     } else {
@@ -850,9 +903,12 @@ export default function MinesweeperBoard({
         };
 
         if (cell.isMine) {
-          // Réduire la taille sur iOS également pour cohérence
-          content = <ThemedText style={[styles.mine, cell.isExploded && styles.explodedMine, { fontSize: 16 }]}>💣</ThemedText>;
-          backgroundColor = cell.isExploded ? themeColors.explodedMine : themeColors.regularMine;
+          // Même modification pour iOS
+          content = <BombImage size={cellSize} isExploded={cell.isExploded} />;
+          
+          backgroundColor = cell.isExploded 
+            ? currentTheme.revealedColor 
+            : themeColors.regularMine;
         } else if (cell.adjacentMines > 0) {
           content = (
             <ThemedText style={[styles.number, { color: themeColors.textColor }]}>
@@ -882,8 +938,7 @@ export default function MinesweeperBoard({
         } : {};
 
         if (cell.isFlagged) {
-          // Réduire la taille sur iOS également pour cohérence
-          content = <ThemedText style={[styles.flag, { fontSize: 16 }]}>🚩</ThemedText>;
+          content = <FlagIcon size={cellSize * 0.85} theme={currentTheme} />;
         }
       }
     }
@@ -900,7 +955,6 @@ export default function MinesweeperBoard({
             ...borderStyle,
             ...shadowStyle,
           },
-          // Style pour Android: aucune marge pour éviter les lignes
           Platform.OS === 'android' && {
             margin: 0,
             padding: 0,
@@ -932,9 +986,7 @@ export default function MinesweeperBoard({
           borderRadius: 8,
         },
         Platform.OS === 'android' && {
-          // Ajouter une ombre externe pour définir clairement les limites de la grille
           elevation: 4,
-          // Bordure fine autour de toute la grille pour la délimiter
           borderWidth: 1,
           borderColor: currentTheme.darkBorderColor,
         }
@@ -946,7 +998,7 @@ export default function MinesweeperBoard({
               styles.row,
               Platform.OS === 'android' && {
                 overflow: 'hidden',
-                flexDirection: 'row', // S'assurer que c'est bien une ligne
+                flexDirection: 'row',
                 margin: 0,
                 padding: 0,
                 height: cellSize,
@@ -960,13 +1012,11 @@ export default function MinesweeperBoard({
     );
   };
 
-  // Fonction pour rejouer une partie
   const handlePlayAgain = () => {
     setShowEndGameModal(false);
     initializeBoard();
   };
 
-  // Fonction pour retourner à la page d'accueil
   const handleBackToHome = () => {
     setShowEndGameModal(false);
     router.replace("/(tabs)/difficulty-select");
@@ -1102,6 +1152,34 @@ export default function MinesweeperBoard({
     );
   };
 
+  const renderHeader = () => (
+    <View style={[
+      styles.header, 
+      themeStyle.header,
+      { width: '100%' }
+    ]}>
+      <View style={styles.counterContainer}>
+        <ThemedText style={[styles.counter, { 
+          color: currentTheme.textColor, 
+          fontSize: Platform.OS === 'android' ? 14 : 18,
+          lineHeight: Platform.OS === 'android' ? 18 : 22
+        }]}>
+          <ThemedText style={{ fontSize: Platform.OS === 'android' ? 12 : 16 }}>🚩</ThemedText> {mines - flagsPlaced}
+        </ThemedText>
+      </View>
+      
+      <View style={styles.timerContainer}>
+        <ThemedText style={[styles.timer, { 
+          color: currentTheme.textColor, 
+          fontSize: Platform.OS === 'android' ? 14 : 18,
+          lineHeight: Platform.OS === 'android' ? 18 : 22
+        }]}>
+          <ThemedText style={{ fontSize: Platform.OS === 'android' ? 12 : 16 }}>⏱️</ThemedText> {formatTime(gameTime)}
+        </ThemedText>
+      </View>
+    </View>
+  );
+
   return (
     <ScrollView 
       contentContainerStyle={[
@@ -1121,18 +1199,16 @@ export default function MinesweeperBoard({
         <View style={[
           styles.container,
           { 
-            width: '100%',       // Toujours 100% de largeur
+            width: '100%',
             alignItems: 'center', 
-            paddingHorizontal: 0, // Supprimer le padding horizontal
+            paddingHorizontal: 0,
           }
         ]}>
-          {/* Header section - 100% width */}
           <View style={{ 
             width: '100%', 
             paddingHorizontal: 8,
             alignItems: 'center',
           }}>
-            {/* Conteneur de bouton de thème - ajuster pour le nouveau menu */}
             <View style={[
               styles.themeButtonContainer,
               { 
@@ -1143,7 +1219,7 @@ export default function MinesweeperBoard({
                 position: 'relative',
                 alignItems: 'center',
                 zIndex: 100,
-                paddingHorizontal: 5, // Léger padding pour l'espacement
+                paddingHorizontal: 5,
               }
             ]}>
               {renderThemeCircles()}
@@ -1159,7 +1235,7 @@ export default function MinesweeperBoard({
                     borderRadius: 20,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    marginRight: 0, // Supprimer la marge droite
+                    marginRight: 0,
                   }
                 ]}
                 onPress={() => setShowThemeMenu(!showThemeMenu)}
@@ -1168,34 +1244,8 @@ export default function MinesweeperBoard({
               </TouchableOpacity>
             </View>
 
-            {/* Header bar - full width */}
-            <View style={[
-              styles.header, 
-              themeStyle.header,
-              { width: '100%' }
-            ]}>
-              <View style={styles.counterContainer}>
-                <ThemedText style={[styles.counter, { 
-                  color: currentTheme.textColor, 
-                  fontSize: Platform.OS === 'android' ? 14 : 18,
-                  lineHeight: Platform.OS === 'android' ? 18 : 22
-                }]}>
-                  <ThemedText style={{ fontSize: Platform.OS === 'android' ? 12 : 16 }}>🚩</ThemedText> {mines - flagsPlaced}
-                </ThemedText>
-              </View>
-              
-              <View style={styles.timerContainer}>
-                <ThemedText style={[styles.timer, { 
-                  color: currentTheme.textColor, 
-                  fontSize: Platform.OS === 'android' ? 14 : 18,
-                  lineHeight: Platform.OS === 'android' ? 18 : 22
-                }]}>
-                  <ThemedText style={{ fontSize: Platform.OS === 'android' ? 12 : 16 }}>⏱️</ThemedText> {formatTime(gameTime)}
-                </ThemedText>
-              </View>
-            </View>
+            {renderHeader()}
             
-            {/* Difficulté actuelle - remplace les boutons */}
             <View style={{
               width: '100%',
               alignItems: 'center',
@@ -1228,7 +1278,6 @@ export default function MinesweeperBoard({
             </View>
           </View>
           
-          {/* Game board - scrollable if needed */}
           <View style={[
             styles.scrollContainer, 
             themeStyle.scrollContainer,
@@ -1271,7 +1320,6 @@ export default function MinesweeperBoard({
             </ScrollView>
           </View>
           
-          {/* Correction du conteneur de mode - il manquait une ouverture de View */}
           <View style={[styles.modeContainer, themeStyle.modeContainer]}>
             <ThemedText style={[styles.modeText, { 
               color: currentTheme.textColor, 
@@ -1292,8 +1340,6 @@ export default function MinesweeperBoard({
             }]}>🚩</ThemedText>
           </View>
           
-      
-
           {renderEndGameModal()}
         </View>
       </TouchableWithoutFeedback>

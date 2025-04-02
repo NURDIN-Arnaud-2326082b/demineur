@@ -64,7 +64,7 @@ export default function DifficultySelectScreen() {
               <ThemedText>Grille 16 × 16</ThemedText>
               <ThemedText>40 mines</ThemedText>
               <ThemedText style={styles.difficultyDescription}>
-                Pour les joueurs intermédiaires. Un bon défi.
+                Pour les joueurs qui ne cherchent pas de réels défis.
               </ThemedText>
             </View>
           </TouchableOpacity>
@@ -80,7 +80,7 @@ export default function DifficultySelectScreen() {
               <ThemedText>Grille 30 × 16</ThemedText>
               <ThemedText>99 mines</ThemedText>
               <ThemedText style={styles.difficultyDescription}>
-                Pour les experts. Concentration et stratégie requises!
+                Pour les joueurs recherchant un vrai défi.
               </ThemedText>
             </View>
           </TouchableOpacity>
@@ -96,7 +96,7 @@ export default function DifficultySelectScreen() {
               <ThemedText>Grille 5 × 5</ThemedText>
               <ThemedText>Une seule case sans mine!</ThemedText>
               <ThemedText style={styles.difficultyDescription}>
-                Mode extrême: 100% chance ou malchance!
+                Mode extrême: c'est comme à la roulette russe mais avec q'une possibilité de s'en sortir !
               </ThemedText>
             </View>
           </TouchableOpacity>
